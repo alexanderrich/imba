@@ -54,7 +54,7 @@ if __name__ == '__main__':
     product_embeddings.columns =  embedings + ['product_id']
 
     order_train = pd.read_pickle(os.path.join(path, 'chunk_0.pkl'))
-    order_test = order_train.loc[order_train.eval_set == "test", ['order_id', 'product_id']]
+    # order_test = order_train.loc[order_train.eval_set == "test", ['order_id', 'product_id']]
     order_train = order_train.loc[order_train.eval_set == "train", ['order_id',  'product_id',  'reordered']]
 
     product_periods = pd.read_pickle(os.path.join(path, 'product_periods_stat.pkl')).fillna(9999)
@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
     orders_products = pd.merge(orders_products, order_stat, on='order_id')
     orders_products['add_to_cart_order_inverted'] = orders_products.order_size - orders_products.add_to_cart_order
-    orders_products['add_to_cart_order'] = orders_products.add_to_cart_order / orders_products.order_size
+    orders_products['add_to_cart_order_relative'] = orders_products.add_to_cart_order / orders_products.order_size
 
     data = orders_products.groupby(['user_id', 'product_id']).agg({'user_id': 'size',
                                                                    'order_number': ['min', 'max'],
@@ -206,24 +206,24 @@ if __name__ == '__main__':
 
     ##############
 
-    order_test = pd.merge(order_test, products, on='product_id')
-    order_test = pd.merge(order_test, orders, on='order_id')
-    order_test = pd.merge(order_test, user_dep_stat, on=['user_id', 'department_id'])
-    order_test = pd.merge(order_test, user_aisle_stat, on=['user_id', 'aisle_id'])
+    # order_test = pd.merge(order_test, products, on='product_id')
+    # order_test = pd.merge(order_test, orders, on='order_id')
+    # order_test = pd.merge(order_test, user_dep_stat, on=['user_id', 'department_id'])
+    # order_test = pd.merge(order_test, user_aisle_stat, on=['user_id', 'aisle_id'])
 
-    order_test = pd.merge(order_test, prod_usr, on='product_id')
-    order_test = pd.merge(order_test, prod_usr_reordered, on='product_id', how='left')
+    # order_test = pd.merge(order_test, prod_usr, on='product_id')
+    # order_test = pd.merge(order_test, prod_usr_reordered, on='product_id', how='left')
     order_train.prod_users_unq_reordered.fillna(0, inplace=True)
 
-    order_test = pd.merge(order_test, data, on=['product_id', 'user_id'])
+    # order_test = pd.merge(order_test, data, on=['product_id', 'user_id'])
 
-    order_test['aisle_reordered_ratio'] = order_test.aisle_reordered / order_test.user_orders
-    order_test['dep_reordered_ratio'] = order_test.dep_reordered / order_test.user_orders
+    # order_test['aisle_reordered_ratio'] = order_test.aisle_reordered / order_test.user_orders
+    # order_test['dep_reordered_ratio'] = order_test.dep_reordered / order_test.user_orders
 
-    order_test = pd.merge(order_test, product_periods, on=['user_id', 'product_id'])
+    # order_test = pd.merge(order_test, product_periods, on=['user_id', 'product_id'])
 
     order_train = pd.merge(order_train, product_embeddings, on=['product_id'])
-    order_test = pd.merge(order_test, product_embeddings, on=['product_id'])
+    # order_test = pd.merge(order_test, product_embeddings, on=['product_id'])
 
     print('data is joined')
 
@@ -266,14 +266,25 @@ if __name__ == '__main__':
 
     print('not included', set(order_train.columns.tolist()) - set(features))
 
-    data = order_train[features]
-    labels = order_train[['reordered']].values.astype(np.float32).flatten()
+    # data = order_train[features]
+    # labels = order_train[['reordered']].values.astype(np.float32).flatten()
 
-    data_val = order_test[features]
+    # data_val = order_test[features]
 
     print('data shape:', data.shape)
 
-    assert data.shape[0] == 8474661
+    order_train.drop('product_name', axis=1, inplace=True)
+    # order_test.drop('product_name', axis=1, inplace=True)
+
+
+    # validation_set = pd.read_hdf(os.path.join(path, "none_stats.h5"), "table")
+    # validation_set = validation_set.query('eval_set=="train"')[['user_id', 'validation_set']].drop_duplicates()
+
+    # order_train = order_train.merge(validation_set, on='user_id')
+
+    order_train.to_hdf(os.path.join(path, "sh1ng_extratrain.h5"), "table", format='table', data_columns=['eval_set'])
+    # order_test.to_hdf(os.path.join(path, "sh1ng_test.h5"), "table", format='table', data_columns=['eval_set'])
+    # assert data.shape[0] == 8474661
 
     # lgb_train = lgb.Dataset(data.values, labels, feature_name=features, categorical_feature=categories)
 
