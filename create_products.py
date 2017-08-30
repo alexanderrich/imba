@@ -2,14 +2,21 @@ import gc
 import pandas as pd
 import numpy as np
 import os
+import sys
 
 if __name__ == '__main__':
+
+    is_extra = len(sys.argv) == 2 and sys.argv[1] == "extra"
+    if is_extra:
+        prior_name = "order_products__prior_extratrain.csv"
+    else:
+        prior_name = "order_products__prior.csv"
     path = "data"
 
-    order_prior = pd.read_csv(os.path.join(path, "order_products__prior.csv"), dtype={'order_id': np.uint32,
-                                                                                      'product_id': np.uint16,
-                                                                                      'add_to_cart_order':np.uint8,
-                                                                                      'reordered': bool})
+    order_prior = pd.read_csv(os.path.join(path, prior_name), dtype={'order_id': np.uint32,
+                                                                     'product_id': np.uint16,
+                                                                     'add_to_cart_order':np.uint8,
+                                                                     'reordered': bool})
     orders = pd.read_csv(os.path.join(path, "orders.csv"), dtype={'order_id':np.uint32,
                                                                   'user_id': np.uint32,
                                                                   'eval_set': 'category',

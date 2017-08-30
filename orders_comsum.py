@@ -8,19 +8,27 @@ from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 from scipy.sparse import dok_matrix, coo_matrix
 from sklearn.utils.multiclass import  type_of_target
+import sys
 
 
 if __name__ == '__main__':
     path = "data"
 
+    is_extra = len(sys.argv) == 2 and sys.argv[1] == "extra"
+    if is_extra:
+        prior_name = "order_products__prior_extratrain.csv"
+        train_name = "order_products__train_extratrain.csv"
+    else:
+        prior_name = "order_products__prior.csv"
+        train_name = "order_products__train.csv"
     aisles = pd.read_csv(os.path.join(path, "aisles.csv"), dtype={'aisle_id': np.uint8, 'aisle': 'category'})
     departments = pd.read_csv(os.path.join(path, "departments.csv"),
                               dtype={'department_id': np.uint8, 'department': 'category'})
-    order_prior = pd.read_csv(os.path.join(path, "order_products__prior.csv"), dtype={'order_id': np.uint32,
+    order_prior = pd.read_csv(os.path.join(path, prior_name), dtype={'order_id': np.uint32,
                                                                                       'product_id': np.uint16,
                                                                                       'add_to_cart_order': np.uint8,
                                                                                       'reordered': bool})
-    order_train = pd.read_csv(os.path.join(path, "order_products__train.csv"), dtype={'order_id': np.uint32,
+    order_train = pd.read_csv(os.path.join(path, train_name), dtype={'order_id': np.uint32,
                                                                                       'product_id': np.uint16,
                                                                                       'add_to_cart_order': np.uint8,
                                                                                       'reordered': bool})

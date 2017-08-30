@@ -4,6 +4,8 @@ import lightgbm as lgb
 import sys
 import gc
 
+## run lightgbm model on one fold of sh1ng data. Take 60% of eligible training
+## data randomly for each fold to prevent memory issues
 v = int(sys.argv[1])
 
 extratrain_df = pd.read_hdf('data/sh1ng_extratrain.h5', 'table')
@@ -77,8 +79,6 @@ params = {
     'max_depth': 12,
     'learning_rate': 0.05,
     'feature_fraction': 0.6,
-    # 'bagging_fraction': 0.9,
-    # 'bagging_freq': 3,
     'verbose': 1
 }
 

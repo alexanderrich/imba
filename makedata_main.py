@@ -10,8 +10,17 @@ from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 from scipy.sparse import dok_matrix, coo_matrix
 from sklearn.utils.multiclass import  type_of_target
+import sys
 
 
+
+is_extra = len(sys.argv) == 2 and sys.argv[1] == "extra"
+if is_extra:
+    prior_name = "order_products__prior_extratrain.csv"
+    train_name = "order_products__train_extratrain.csv"
+else:
+    prior_name = "order_products__prior.csv"
+    train_name = "order_products__train.csv"
 
 def fscore(true_value_matrix, prediction, order_index, product_index, rows, cols, threshold=[0.5]):
 
@@ -54,7 +63,8 @@ if __name__ == '__main__':
     product_embeddings.columns =  embedings + ['product_id']
 
     order_train = pd.read_pickle(os.path.join(path, 'chunk_0.pkl'))
-    # order_test = order_train.loc[order_train.eval_set == "test", ['order_id', 'product_id']]
+    if not is_extra:
+        order_test = order_train.loc[order_train.eval_set == "test", ['order_id', 'product_id']]
     order_train = order_train.loc[order_train.eval_set == "train", ['order_id',  'product_id',  'reordered']]
 
     product_periods = pd.read_pickle(os.path.join(path, 'product_periods_stat.pkl')).fillna(9999)
@@ -206,114 +216,37 @@ if __name__ == '__main__':
 
     ##############
 
-    # order_test = pd.merge(order_test, products, on='product_id')
-    # order_test = pd.merge(order_test, orders, on='order_id')
-    # order_test = pd.merge(order_test, user_dep_stat, on=['user_id', 'department_id'])
-    # order_test = pd.merge(order_test, user_aisle_stat, on=['user_id', 'aisle_id'])
+    if not is_extra:
+        order_test = pd.merge(order_test, products, on='product_id')
+        order_test = pd.merge(order_test, orders, on='order_id')
+        order_test = pd.merge(order_test, user_dep_stat, on=['user_id', 'department_id'])
+        order_test = pd.merge(order_test, user_aisle_stat, on=['user_id', 'aisle_id'])
 
-    # order_test = pd.merge(order_test, prod_usr, on='product_id')
-    # order_test = pd.merge(order_test, prod_usr_reordered, on='product_id', how='left')
+        order_test = pd.merge(order_test, prod_usr, on='product_id')
+        order_test = pd.merge(order_test, prod_usr_reordered, on='product_id', how='left')
+
     order_train.prod_users_unq_reordered.fillna(0, inplace=True)
 
-    # order_test = pd.merge(order_test, data, on=['product_id', 'user_id'])
+    if not is_extra:
+        order_test = pd.merge(order_test, data, on=['product_id', 'user_id'])
 
-    # order_test['aisle_reordered_ratio'] = order_test.aisle_reordered / order_test.user_orders
-    # order_test['dep_reordered_ratio'] = order_test.dep_reordered / order_test.user_orders
+        order_test['aisle_reordered_ratio'] = order_test.aisle_reordered / order_test.user_orders
+        order_test['dep_reordered_ratio'] = order_test.dep_reordered / order_test.user_orders
 
-    # order_test = pd.merge(order_test, product_periods, on=['user_id', 'product_id'])
+        order_test = pd.merge(order_test, product_periods, on=['user_id', 'product_id'])
 
     order_train = pd.merge(order_train, product_embeddings, on=['product_id'])
-    # order_test = pd.merge(order_test, product_embeddings, on=['product_id'])
+
+    if not is_extra:
+        order_test = pd.merge(order_test, product_embeddings, on=['product_id'])
 
     print('data is joined')
 
-    features = [
-        # 'reordered_dow_ration', 'reordered_dow', 'reordered_dow_size',
-        # 'reordered_prev', 'add_to_cart_order_prev', 'order_dow_prev', 'order_hour_of_day_prev',
-        'user_product_reordered_ratio', 'reordered_sum',
-        'add_to_cart_order_inverted_mean', 'add_to_cart_order_relative_mean',
-        'reorder_prob',
-        'last', 'prev1', 'prev2', 'median', 'mean',
-        'dep_reordered_ratio', 'aisle_reordered_ratio',
-        'aisle_products',
-        'aisle_reordered',
-        'dep_products',
-        'dep_reordered',
-        'prod_users_unq', 'prod_users_unq_reordered',
-        'order_number', 'prod_add_to_card_mean',
-        'days_since_prior_order',
-        'order_dow', 'order_hour_of_day',
-        'reorder_ration',
-        'user_orders', 'user_order_starts_at', 'user_mean_days_since_prior',
-        # 'user_median_days_since_prior',
-        'user_average_basket', 'user_distinct_products', 'user_reorder_ratio', 'user_total_products',
-        'prod_orders', 'prod_reorders',
-        'up_order_rate', 'up_orders_since_last_order', 'up_order_rate_since_first_order',
-        'up_orders', 'up_first_order', 'up_last_order', 'up_mean_cart_position',
-        # 'up_median_cart_position',
-        'days_since_prior_order_mean',
-        # 'days_since_prior_order_median',
-        'order_dow_mean',
-        # 'order_dow_median',
-        'order_hour_of_day_mean',
-        # 'order_hour_of_day_median'
-    ]
-    features.extend(embedings)
-    categories = ['product_id', 'aisle_id', 'department_id']
-    # features.extend(embedings)
-    cat_features = ','.join(map(lambda x: str(x + len(features)), range(len(categories))))
-    features.extend(categories)
-
-    print('not included', set(order_train.columns.tolist()) - set(features))
-
-    # data = order_train[features]
-    # labels = order_train[['reordered']].values.astype(np.float32).flatten()
-
-    # data_val = order_test[features]
-
-    print('data shape:', data.shape)
-
-    order_train.drop('product_name', axis=1, inplace=True)
-    # order_test.drop('product_name', axis=1, inplace=True)
-
-
-    # validation_set = pd.read_hdf(os.path.join(path, "none_stats.h5"), "table")
-    # validation_set = validation_set.query('eval_set=="train"')[['user_id', 'validation_set']].drop_duplicates()
-
-    # order_train = order_train.merge(validation_set, on='user_id')
-
-    order_train.to_hdf(os.path.join(path, "sh1ng_extratrain.h5"), "table", format='table', data_columns=['eval_set'])
-    # order_test.to_hdf(os.path.join(path, "sh1ng_test.h5"), "table", format='table', data_columns=['eval_set'])
-    # assert data.shape[0] == 8474661
-
-    # lgb_train = lgb.Dataset(data.values, labels, feature_name=features, categorical_feature=categories)
-
-    # # specify your configurations as a dict
-    # params = {
-    #     'task': 'train',
-    #     'boosting_type': 'gbdt',
-    #     'objective': 'binary',
-    #     'metric': {'binary_logloss', 'auc'},
-    #     'num_leaves': 256,
-    #     'min_sum_hessian_in_leaf': 20,
-    #     'max_depth': 12,
-    #     'learning_rate': 0.05,
-    #     'feature_fraction': 0.6,
-    #     # 'bagging_fraction': 0.9,
-    #     # 'bagging_freq': 3,
-    #     'verbose': 1
-    # }
-
-    # print('Start training...')
-    # # train
-    # gbm = lgb.train(params,
-    #                 lgb_train,
-    #                 num_boost_round=380)
-
-    # prediction = gbm.predict(data_val.values)
-    # # prediction = model.predict(data_val)
-    # orders = order_test.order_id.values
-    # products = order_test.product_id.values
-
-    # result = pd.DataFrame({'product_id': products, 'order_id': orders, 'prediction': prediction})
-    # result.to_pickle('data/prediction_lgbm.pkl')
+    if not is_extra:
+        validation_set = pd.read_hdf(os.path.join(path, "none_stats.h5"), "table")
+        validation_set = validation_set.query('eval_set=="train"')[['user_id', 'validation_set']].drop_duplicates()
+        order_train = order_train.merge(validation_set, on='user_id')
+        order_train.to_hdf(os.path.join(path, "sh1ng_train.h5"), "table", format='table', data_columns=['eval_set', 'validation_set'])
+        order_test.to_hdf(os.path.join(path, "sh1ng_test.h5"), "table", format='table', data_columns=['eval_set'])
+    else:
+        order_train.to_hdf(os.path.join(path, "sh1ng_extratrain.h5"), "table", format='table', data_columns=['eval_set'])
